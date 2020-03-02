@@ -2,7 +2,7 @@
 import os
 import json
 
-def write_to_file(data, path, filename, extn='.output'):
+def write_to_file(data, path, filename, extn=''):
 
     filename = filename.replace(' ', '_').lower()
     path = os.path.expanduser(path)
