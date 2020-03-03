@@ -4,7 +4,7 @@
   - name: set_fact
     set_fact:
       azure_cred_file: "{{ azure_cred_file | default('azure.key')  }}"
-      state: "{{ state | default('present')  }}"
+      state: "{{ state | default('absent')  }}"
       azure_profile: "{{ azure_profile | default('default') }}"
       azure_file_format: "{{ azure_file_format | default('cfg') }}"
       azure_credential_folder: "{{ credential_folder | default('./credentials') }}"
@@ -18,54 +18,6 @@
       auth_var: "{{ azure_creds['key'] }}"
   
 
-
-  - name: Provision resource group for Azure
-    azure_rm_resourcegroup:
-      client_id: "{{ auth_var['client_id'] | default(omit) }}"
-      tenant: "{{ auth_var['tenant'] | default(omit) }}"
-      secret: "{{ auth_var['secret'] | default(omit) }}"
-      subscription_id: "{{ auth_var['subscription_id'] | default(omit) }}"
-      name: "linchpin-mock-resgrp"
-      location: centralus
-    register: linchpin_mock_resgrp_output
-
-
-  - name: "write mock data"
-    debug:
-      msg: "{{ linchpin_mock_resgrp_output | write_to_file(data_output_folder, '_resource_group.present.data') }}"
-
-  - name: "Provisioning Azure Virtual Network when not async"
-    azure_rm_virtualnetwork:
-      client_id: "{{ auth_var['client_id'] | default(omit) }}"
-      tenant: "{{ auth_var['tenant'] | default(omit) }}"
-      secret: "{{ auth_var['secret'] | default(omit) }}"
-      subscription_id: "{{ auth_var['subscription_id'] | default(omit) }}"
-      resource_group: linchpin-mock-resgrp
-      address_prefixes: '10.1.0.0/16'
-      name: linchpin-mock-vn
-    register: linchpin_mock_vn_output
-
-  - name: "write mock data"
-    debug:
-      msg: "{{ linchpin_mock_vn_output | write_to_file(data_output_folder, '_virtual_network.present.data') }}"
-
-
-  - name: "Provisioning Azure Virtual Subnet when not async"
-    azure_rm_subnet:
-      client_id: "{{ auth_var['client_id'] | default(omit) }}"
-      tenant: "{{ auth_var['tenant'] | default(omit) }}"
-      secret: "{{ auth_var['secret'] | default(omit) }}"
-      subscription_id: "{{ auth_var['subscription_id'] | default(omit) }}"
-      resource_group: linchpin-mock-resgrp
-      name: linchpin-mock-subnet
-      virtual_network_name: linchpin-mock-vn
-      address_prefix: "10.1.1.0/24"
-    register: linchpin_mock_subnet_output
-
-  - name: "write mock data"
-    debug:
-      msg: "{{ linchpin_mock_subnet_output | write_to_file(data_output_folder, '_virtual_subnet.present.data') }}"
-
   - name: "Provisioning Azure Virtual Network Interface when not async"
     azure_rm_networkinterface:
       client_id: "{{ auth_var['client_id'] | default(omit) }}"
@@ -76,11 +28,12 @@
       virtual_network: linchpin-mock-vn
       subnet_name: linchpin-mock-subnet
       name: linchpin-mock-nic
+      state: absent
     register: linchpin_mock_nic_output
 
   - name: "write mock data"
     debug:
-      msg: "{{ linchpin_mock_nic_output | write_to_file(data_output_folder, '_network_interface.present.data') }}"
+      msg: "{{ linchpin_mock_nic_output | write_to_file(data_output_folder, '_network_interface.absent.data') }}"
 
   - name: Provision a Azure Vm
     azure_rm_virtualmachine:
@@ -93,6 +46,7 @@
       resource_group: linchpin-mock-resgrp
       vm_size: "{{ res_def['vm_size'] | default('Standard_DS1_v2') }}"
       name: linchpin-mock-vm
+      state: absent
       virtual_network_name: linchpin-mock-vn
       image: 
         offer: CentOS
@@ -103,7 +57,40 @@
 
   - name: "write mock data"
     debug:
-      msg: "{{ linchpin_mock_vm_output | write_to_file(data_output_folder, '_vm.present.data') }}"
+      msg: "{{ linchpin_mock_vm_output | write_to_file(data_output_folder, '_vm.absent.data') }}"
+
+  - name: "Provisioning Azure Virtual Subnet when not async"
+    azure_rm_subnet:
+      client_id: "{{ auth_var['client_id'] | default(omit) }}"
+      tenant: "{{ auth_var['tenant'] | default(omit) }}"
+      secret: "{{ auth_var['secret'] | default(omit) }}"
+      subscription_id: "{{ auth_var['subscription_id'] | default(omit) }}"
+      resource_group: linchpin-mock-resgrp
+      name: linchpin-mock-subnet
+      virtual_network_name: linchpin-mock-vn
+      address_prefix: "10.1.1.0/24"
+      state: absent
+    register: linchpin_mock_subnet_output
+
+  - name: "write mock data"
+    debug:
+      msg: "{{ linchpin_mock_subnet_output | write_to_file(data_output_folder, '_virtual_subnet.absent.data') }}"
+
+  - name: "Provisioning Azure Virtual Network when not async"
+    azure_rm_virtualnetwork:
+      client_id: "{{ auth_var['client_id'] | default(omit) }}"
+      tenant: "{{ auth_var['tenant'] | default(omit) }}"
+      secret: "{{ auth_var['secret'] | default(omit) }}"
+      subscription_id: "{{ auth_var['subscription_id'] | default(omit) }}"
+      resource_group: linchpin-mock-resgrp
+      address_prefixes: '10.1.0.0/16'
+      name: linchpin-mock-vn
+      state: absent
+    register: linchpin_mock_vn_output
+
+  - name: "write mock data"
+    debug:
+      msg: "{{ linchpin_mock_vn_output | write_to_file(data_output_folder, '_virtual_network.absent.data') }}"
 
 
   - name: Create an availability set with advanced options
@@ -118,29 +105,13 @@
       platform_update_domain_count: 3
       platform_fault_domain_count: 3
       sku: 'Classic'
-      state: present
+      state: absent
     register: linchpin_mock_avset_output
 
   - name: "write mock data"
     debug:
-      msg: "{{ linchpin_mock_avset_output | write_to_file(data_output_folder, '_availabilityset.present.data') }}"
+      msg: "{{ linchpin_mock_avset_output | write_to_file(data_output_folder, '_availabilityset.absent.data') }}"
 
-
-  - name: Create a public ip address
-    azure_rm_publicipaddress:
-      client_id: "{{ auth_var['client_id'] | default(omit) }}"
-      tenant: "{{ auth_var['tenant'] | default(omit) }}"
-      secret: "{{ auth_var['secret'] | default(omit) }}"
-      subscription_id: "{{ auth_var['subscription_id'] | default(omit) }}"
-      resource_group: linchpin-mock-resgrp
-      name: linchpin-mock-ip
-      sku: Basic
-      allocation_method: dynamic
-    register: linchpin_mock_ip_output
-
-  - name: "write mock data"
-    debug:
-      msg: "{{ linchpin_mock_ip_output | write_to_file(data_output_folder, '_publicaddress.present.data') }}"
 
   - set_fact:
       frontend_ip_configurations:
@@ -186,13 +157,13 @@
       probes: ["{{ probes }}"]
       inbound_nat_pools: ["{{ inbound_nat_pools }}"]
       load_balancing_rules: ["{{ load_balancing_rules }}"]
-      state: present
+      state: absent
       sku: Basic
     register: linchpin_mock_loadbalancer_output
 
   - name: "write mock data"
     debug:
-      msg: "{{ linchpin_mock_loadbalancer_output | write_to_file(data_output_folder, '_loadbalancer.present.data') }}"
+      msg: "{{ linchpin_mock_loadbalancer_output | write_to_file(data_output_folder, '_loadbalancer.absent.data') }}"
 
   - set_fact:
       rules: 
@@ -212,12 +183,31 @@
         name: linchpin-mock-nsg
         purge_rules: True
         rules: ["{{ rules }}"]
+        state: absent
     register: linchpin_mock_nsg_output
 
 
   - name: "write mock data"
     debug:
-      msg: "{{ linchpin_mock_nsg_output | write_to_file(data_output_folder, '_nsg.present.data') }}"
+      msg: "{{ linchpin_mock_nsg_output | write_to_file(data_output_folder, '_nsg.absent.data') }}"
+
+  - name: Create a public ip address
+    azure_rm_publicipaddress:
+      client_id: "{{ auth_var['client_id'] | default(omit) }}"
+      tenant: "{{ auth_var['tenant'] | default(omit) }}"
+      secret: "{{ auth_var['secret'] | default(omit) }}"
+      subscription_id: "{{ auth_var['subscription_id'] | default(omit) }}"
+      resource_group: linchpin-mock-resgrp
+      name: linchpin-mock-ip
+      sku: Basic
+      state: absent
+      allocation_method: dynamic
+    register: linchpin_mock_ip_output
+
+  - name: "write mock data"
+    debug:
+      msg: "{{ linchpin_mock_ip_output | write_to_file(data_output_folder, '_publicaddress.absent.data') }}"
+
 
 
   # - name: Use Azure Api to manage resources
@@ -238,7 +228,7 @@
 
   - name: Provision Azure storage account
     azure_rm_storageaccount:
-      state: present
+      state: absent
       client_id: "{{ auth_var['client_id'] | default(omit) }}"
       tenant: "{{ auth_var['tenant'] | default(omit) }}"
       secret: "{{ auth_var['secret'] | default(omit) }}"
@@ -250,5 +240,21 @@
 
   - name: "write mock data"
     debug:
-      msg: "{{ linchpin_mock_storageaccount_output | write_to_file(data_output_folder, '_storage_account.present.data') }}"
+      msg: "{{ linchpin_mock_storageaccount_output | write_to_file(data_output_folder, '_storage_account.absent.data') }}"
 
+  - name: Provision resource group for Azure
+    azure_rm_resourcegroup:
+      client_id: "{{ auth_var['client_id'] | default(omit) }}"
+      tenant: "{{ auth_var['tenant'] | default(omit) }}"
+      secret: "{{ auth_var['secret'] | default(omit) }}"
+      subscription_id: "{{ auth_var['subscription_id'] | default(omit) }}"
+      name: "linchpin-mock-resgrp"
+      location: centralus
+      force_delete_nonempty: True
+      state: absent
+    register: linchpin_mock_resgrp_output
+
+
+  - name: "write mock data"
+    debug:
+      msg: "{{ linchpin_mock_resgrp_output | write_to_file(data_output_folder, '_resource_group.absent.data') }}"
